@@ -1,9 +1,9 @@
-# Processing_Node (Risk-V)
-# Selection_Node (UNO 1)
-# Audio_Node (UNO 2)
-# Light_Node (UNO 3)
+## Processing_Node (Risk-V)
+## Selection_Node (UNO 1)
+## Audio_Node (UNO 2)
+## Light_Node (UNO 3)
 
-## RISC-V (processing Node):
+## RISC-V (Processing Node):
 Installing Linux Debian to risc-V using a microsd card. The Risc-V Board uses an HDMI cord to connect directly to a monitor. Connect the speaker to the breadboard or the built in 3.5mm audio jack. Then I2C communication is established by connecting GPIO pins from all 3 arduinos to the risc -v. Logic level shifters are used to manage the voltage difference. 
 
 ## Arduino 1 (Selection Node):
