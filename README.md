@@ -13,4 +13,4 @@ The remote receiver, selection buttons and the 4pin LCD display are connected to
 Attach an electret microphone to the breadboard and connect the GND to the Arduino’s GND, OUT to an analog output (A0-A5), and VCC to 5V. Connect potentiometer + pin to 5v, - pin to GND, and data pin to another analog output (A0-A5). 
 
 ## Arduino 3 (Light/Color Node):
-The LED lights, buttons, and photoresistor, are connected to the breadboard. The photoresistor connects to A0 with a 10k resistor. The LED are wired  with 220k resistors.. The selection buttons are connected to digital pin 2, 3, 4 with 10k resistors each.
+The LED lights, buttons, and photoresistor, are connected to the breadboard. The photoresistor connects to A0 with a 10k resistor. The LED are wired  with 220k resistors. The selection buttons are connected to digital pin 2, 3, 4 with 10k resistors each.
