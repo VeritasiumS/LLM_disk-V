@@ -1,7 +1,18 @@
 // Selection Node - IR Remote Input with LCD Display
-// Sends composed message to Processing Node via I2C
+// Sends composed message to Processing Node (RISC-V) over hardware UART
+// as newline-delimited tagged text:  "SEL:<message>\n"
+//
+// Wiring (RISC-V link):
+//   Uno D1 (TX) ---> 5V<->3.3V logic level shifter (HV side -> LV side)
+//                     ---> RISC-V GPIO UART RX
+//   Uno GND  <-----> RISC-V GND   (mandatory common ground)
+//   Uno D0 (RX) is left unconnected; this node does not receive.
+//
+// D0/D1 are shared with the USB-Serial bridge on Uno R3. Disconnect
+// the D1 wire from the level shifter before uploading a new sketch, and
+// do not open the Arduino Serial Monitor while the RISC-V is also reading
+// the line
 
-#include <Wire.h>
 #include <LiquidCrystal.h>
 #include <IRremote.h>
 
@@ -9,17 +20,12 @@
 // LCD pins: RS, E, D4, D5, D6, D7
 LiquidCrystal lcd(7, 8, 9, 10, 11, 12);
 
-// I2C Config
-#define SLAVE_ADDR 0x08 // ARDUINO_1_ADDR on Processing Node
-#define PACKET_LENGTH 6 // Processing Node's PACKET_LENGTH
+// Serial link config
+#define LINK_BAUD 9600
 
 // Message Buffer
 char messageBuffer[17]; // 16 chars max + null terminator
 uint8_t msgIndex = 0; // current cursor position in buffer
-
-// I2C Transmit Buffer
-volatile uint8_t txBuffer[PACKET_LENGTH];
-volatile bool newDataReady = false;
 
 // States
 enum NodeState {
@@ -54,18 +60,11 @@ char decodeIRToChar(uint32_t code) {
 #define IR_CODE_UP     0x18   // Arrow UP - Confirm / send
 #define IR_CODE_DOWN   0x52   // Arrow DOWN - Delete last char
 
-// I2C Request Handler
-// Called when Processing Node does Wire.requestFrom()
-void onI2CRequest() {
-  Wire.write((const uint8_t*)txBuffer, PACKET_LENGTH);
-    noInterrupts();
-    newDataReady = false; // clear flag after sending
-    interrupts();
-}
-
-// Setup 
+// Setup
 void setup() {
-  Serial.begin(9600);  // debug
+  // Hardware UART -> RISC-V Processing Node.
+  // Keep this clean: only "SEL:<message>\n" lines should go out.
+  Serial.begin(LINK_BAUD);
 
   // LCD init
   lcd.begin(16, 2);
@@ -76,13 +75,8 @@ void setup() {
   // IR init
   IrReceiver.begin(IR_RECEIVE_PIN, ENABLE_LED_FEEDBACK);
 
-  // I2C slave init
-  Wire.begin(SLAVE_ADDR);
-  Wire.onRequest(onI2CRequest);
-
-  // Clear buffers
+  // Clear buffer
   memset(messageBuffer, 0, sizeof(messageBuffer));
-  memset((void*)txBuffer, 0, PACKET_LENGTH);
 }
 
 // Loop
@@ -159,17 +153,12 @@ void updateLCDTyping() {
 }
 
 void sendMessage() {
-  // Pack message into txBuffer for I2C
-  noInterrupts();
-  for (int i = 0; i < PACKET_LENGTH; i++) {
-    if (i < msgIndex) {
-      txBuffer[i] = (uint8_t)messageBuffer[i];
-    } else {
-      txBuffer[i] = 0;
-    }
-  }
-  newDataReady = true;
-  interrupts();
+  // Push one framed line to the RISC-V over UART:  "SEL:<message>\n"
+  // Input is restricted to digits 0-9 by decodeIRToChar(), so the payload
+  // never contains '\n' or other control bytes that would break framing.
+  Serial.print("SEL:");
+  Serial.print(messageBuffer);
+  Serial.print('\n');
 
   // Show confirmation on LCD
   lcd.clear();
